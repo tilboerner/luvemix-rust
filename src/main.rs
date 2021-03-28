@@ -70,6 +70,23 @@ mod cpu {
     }
 }
 
+#[cfg(test)]
+mod test {
+
+    use crate::cpu::*;
+
+    #[test]
+    fn test_get_set_flag() {
+        let mut cpu = CpuState::new();
+
+        assert_eq!(cpu.get_flag(StatusFlag::ZRO), false);
+        cpu.set_flag(StatusFlag::ZRO, true);
+        assert_eq!(cpu.get_flag(StatusFlag::ZRO), true);
+        cpu.set_flag(StatusFlag::ZRO, false);
+        assert_eq!(cpu.get_flag(StatusFlag::ZRO), false);
+    }
+}
+
 fn main() {
     let mut cpu = cpu::CpuState::new();
     println!("Hello {:?}", cpu);
