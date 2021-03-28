@@ -13,6 +13,9 @@ mod cpu {
     pub enum StatusFlag {
         /// Zero
         ZRO = 0b0000_0010,
+
+        /// Negative
+        NEG = 0b1000_0000,
     }
 
     impl StatusFlag {
@@ -85,6 +88,17 @@ mod test {
         cpu.set_flag(StatusFlag::ZRO, false);
         assert_eq!(cpu.get_flag(StatusFlag::ZRO), false);
     }
+
+    #[test]
+    fn test_get_set_flag_ignores_other_flags() {
+        let mut cpu = CpuState::new();
+
+        assert_eq!(cpu.get_flag(StatusFlag::ZRO), false);
+        cpu.set_flag(StatusFlag::NEG, true);
+        assert_eq!(cpu.get_flag(StatusFlag::ZRO), false);
+        cpu.set_flag(StatusFlag::ZRO, false);
+        assert_eq!(cpu.get_flag(StatusFlag::NEG), true);
+    }
 }
 
 fn main() {
@@ -92,4 +106,5 @@ fn main() {
     println!("Hello {:?}", cpu);
     cpu.set_flag(cpu::StatusFlag::ZRO, true);
     println!("Zero {:?}", cpu.get_flag(cpu::StatusFlag::ZRO));
+    println!("Negative {:?}", cpu.get_flag(cpu::StatusFlag::NEG));
 }
