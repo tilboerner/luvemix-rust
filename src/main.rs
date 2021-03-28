@@ -12,7 +12,7 @@ mod cpu {
 
     use crate::types::*;
 
-    pub enum StatusFlag {
+    pub enum Flag {
         /// Zero
         ZRO = 0b0000_0010,
 
@@ -20,7 +20,7 @@ mod cpu {
         NEG = 0b1000_0000,
     }
 
-    impl StatusFlag {
+    impl Flag {
         pub fn to_mask(self) -> Flags {
             self as Flags
         }
@@ -63,11 +63,11 @@ mod cpu {
             }
         }
 
-        pub fn get_flag(&self, flag: StatusFlag) -> bool {
+        pub fn get_flag(&self, flag: Flag) -> bool {
             self.sr & flag.to_mask() != 0
         }
 
-        pub fn set_flag(&mut self, flag: StatusFlag, val: bool) {
+        pub fn set_flag(&mut self, flag: Flag, val: bool) {
             let mask = flag.to_mask();
             let flag_val = if val { self.sr | mask } else { self.sr & !mask };
             self.sr = flag_val;
@@ -75,8 +75,8 @@ mod cpu {
 
         pub fn set_a(&mut self, val: Data) {
             self.a = val;
-            self.set_flag(StatusFlag::ZRO, val == 0);
-            self.set_flag(StatusFlag::NEG, (val >> DATA_WIDTH - 1) > 0);
+            self.set_flag(Flag::ZRO, val == 0);
+            self.set_flag(Flag::NEG, (val >> DATA_WIDTH - 1) > 0);
         }
     }
 }
@@ -91,22 +91,22 @@ mod test {
     fn test_get_set_flag() {
         let mut cpu = CpuState::new();
 
-        assert_eq!(cpu.get_flag(StatusFlag::ZRO), false);
-        cpu.set_flag(StatusFlag::ZRO, true);
-        assert_eq!(cpu.get_flag(StatusFlag::ZRO), true);
-        cpu.set_flag(StatusFlag::ZRO, false);
-        assert_eq!(cpu.get_flag(StatusFlag::ZRO), false);
+        assert_eq!(cpu.get_flag(Flag::ZRO), false);
+        cpu.set_flag(Flag::ZRO, true);
+        assert_eq!(cpu.get_flag(Flag::ZRO), true);
+        cpu.set_flag(Flag::ZRO, false);
+        assert_eq!(cpu.get_flag(Flag::ZRO), false);
     }
 
     #[test]
     fn test_get_set_flag_ignores_other_flags() {
         let mut cpu = CpuState::new();
 
-        assert_eq!(cpu.get_flag(StatusFlag::ZRO), false);
-        cpu.set_flag(StatusFlag::NEG, true);
-        assert_eq!(cpu.get_flag(StatusFlag::ZRO), false);
-        cpu.set_flag(StatusFlag::ZRO, false);
-        assert_eq!(cpu.get_flag(StatusFlag::NEG), true);
+        assert_eq!(cpu.get_flag(Flag::ZRO), false);
+        cpu.set_flag(Flag::NEG, true);
+        assert_eq!(cpu.get_flag(Flag::ZRO), false);
+        cpu.set_flag(Flag::ZRO, false);
+        assert_eq!(cpu.get_flag(Flag::NEG), true);
     }
 
     #[test]
@@ -124,11 +124,11 @@ mod test {
 
         cpu.set_a(0);
 
-        assert_eq!(cpu.get_flag(StatusFlag::ZRO), true);
+        assert_eq!(cpu.get_flag(Flag::ZRO), true);
 
         cpu.set_a(42);
 
-        assert_eq!(cpu.get_flag(StatusFlag::ZRO), false);
+        assert_eq!(cpu.get_flag(Flag::ZRO), false);
     }
 
     #[test]
@@ -137,18 +137,18 @@ mod test {
 
         cpu.set_a(1 << DATA_WIDTH - 1);
 
-        assert_eq!(cpu.get_flag(StatusFlag::NEG), true);
+        assert_eq!(cpu.get_flag(Flag::NEG), true);
 
         cpu.set_a(0);
 
-        assert_eq!(cpu.get_flag(StatusFlag::NEG), false);
+        assert_eq!(cpu.get_flag(Flag::NEG), false);
     }
 }
 
 fn main() {
     let mut cpu = cpu::CpuState::new();
     println!("Hello {:?}", cpu);
-    cpu.set_flag(cpu::StatusFlag::ZRO, true);
-    println!("Zero {:?}", cpu.get_flag(cpu::StatusFlag::ZRO));
-    println!("Negative {:?}", cpu.get_flag(cpu::StatusFlag::NEG));
+    cpu.set_flag(cpu::Flag::ZRO, true);
+    println!("Zero {:?}", cpu.get_flag(cpu::Flag::ZRO));
+    println!("Negative {:?}", cpu.get_flag(cpu::Flag::NEG));
 }
