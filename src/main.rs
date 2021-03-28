@@ -58,7 +58,7 @@ mod cpu {
             }
         }
 
-        pub fn get_flag(self, flag: StatusFlag) -> bool {
+        pub fn get_flag(&self, flag: StatusFlag) -> bool {
             self.sr & flag.to_mask() != 0
         }
 
