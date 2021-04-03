@@ -109,6 +109,28 @@ mod cpu {
             self.map.insert(addr, val);
         }
     }
+
+    #[derive(Debug)]
+    pub struct Cpu<'a> {
+        state: CpuState,
+        mem: &'a mut CheapoMemory,
+    }
+
+    impl<'a> Cpu<'a> {
+        pub fn new(mem: &mut CheapoMemory) -> Cpu {
+            Cpu {
+                state: CpuState::new(),
+                mem: mem,
+            }
+        }
+
+        pub fn execute_cycle(&mut self, val: Data) {
+            self.mem.write(self.state.mar, val);
+            let data = self.mem.read(&self.state.mar);
+            let data = data.unwrap();
+            self.state.set_a(*data);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -192,15 +214,16 @@ mod test {
 
 fn main() {
     use cpu::*;
-    let mut cpu = cpu::CpuState::new();
-    let mut mem = cpu::CheapoMemory::new();
-    println!("Hello {:?}", cpu);
-    cpu.set_flag(cpu::Flag::ZRO, true);
-    cpu.set_a(0x2A);
-    println!("A {:?}", cpu.a);
-    println!("Zero {:?}", cpu.get_flag(cpu::Flag::ZRO));
-    println!("Negative {:?}", cpu.get_flag(cpu::Flag::NEG));
+    let state = CpuState::new();
+    println!("Hello {:?}", state);
+    println!("A {:?}", state.a);
+    println!("Zero {:?}", state.get_flag(Flag::ZRO));
+    println!("Negative {:?}", state.get_flag(Flag::NEG));
 
-    mem.write(cpu.mar, cpu.mdr);
-    println!("Mem {:?}", mem);
+    let mut mem = CheapoMemory::new();
+    let mut cpu = Cpu::new(&mut mem);
+
+    cpu.execute_cycle(42);
+
+    println!("Cpu {:?}", cpu);
 }
