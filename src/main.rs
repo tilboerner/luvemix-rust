@@ -41,13 +41,13 @@ mod cpu {
         sr: Flags,
 
         // Instruction Register
-        ir: Data,
+        pub ir: Data,
 
         // Memory Address Register
-        mar: Address,
+        pub mar: Address,
 
         // Memory Data Register
-        mdr: Data,
+        pub mdr: Data,
     }
 
     impl CpuState {
@@ -77,6 +77,36 @@ mod cpu {
             self.a = val;
             self.set_flag(Flag::ZRO, val == 0);
             self.set_flag(Flag::NEG, (val >> DATA_WIDTH - 1) > 0);
+        }
+    }
+
+    pub trait Memory {
+        fn read(&self, addr: &Address) -> Option<&Data>;
+        fn write(&mut self, addr: Address, val: Data);
+    }
+
+    use std::collections::HashMap;
+
+    #[derive(Debug)]
+    pub struct CheapoMemory {
+        map: HashMap<Address, Data>,
+    }
+
+    impl CheapoMemory {
+        pub fn new() -> CheapoMemory {
+            CheapoMemory {
+                map: HashMap::new(),
+            }
+        }
+    }
+
+    impl Memory for CheapoMemory {
+        fn read(&self, addr: &Address) -> Option<&Data> {
+            self.map.get(&addr)
+        }
+
+        fn write(&mut self, addr: Address, val: Data) {
+            self.map.insert(addr, val);
         }
     }
 }
@@ -143,14 +173,34 @@ mod test {
 
         assert_eq!(cpu.get_flag(Flag::NEG), false);
     }
+
+    #[test]
+    fn test_cheapo_memory_readwrite() {
+        let mut m = CheapoMemory::new();
+
+        assert_eq!(m.read(&0), None);
+
+        m.write(0, 42);
+
+        assert_eq!(m.read(&0).unwrap(), &42);
+
+        m.write(0, 43);
+
+        assert_eq!(m.read(&0).unwrap(), &43);
+    }
 }
 
 fn main() {
+    use cpu::*;
     let mut cpu = cpu::CpuState::new();
+    let mut mem = cpu::CheapoMemory::new();
     println!("Hello {:?}", cpu);
     cpu.set_flag(cpu::Flag::ZRO, true);
     cpu.set_a(0x2A);
     println!("A {:?}", cpu.a);
     println!("Zero {:?}", cpu.get_flag(cpu::Flag::ZRO));
     println!("Negative {:?}", cpu.get_flag(cpu::Flag::NEG));
+
+    mem.write(cpu.mar, cpu.mdr);
+    println!("Mem {:?}", mem);
 }
