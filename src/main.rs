@@ -81,7 +81,7 @@ mod cpu {
     }
 
     pub trait Memory {
-        fn read(&self, addr: &Address) -> Option<&Data>;
+        fn read(&self, addr: &Address) -> Option<Data>;
         fn write(&mut self, addr: Address, val: Data);
     }
 
@@ -101,8 +101,12 @@ mod cpu {
     }
 
     impl Memory for CheapoMemory {
-        fn read(&self, addr: &Address) -> Option<&Data> {
-            self.map.get(&addr)
+        fn read(&self, addr: &Address) -> Option<Data> {
+            let val = self.map.get(&addr);
+            match val {
+                None => None,
+                Some(data) => Some(*data),
+            }
         }
 
         fn write(&mut self, addr: Address, val: Data) {
@@ -128,7 +132,7 @@ mod cpu {
             self.mem.write(self.state.mar, val);
             let data = self.mem.read(&self.state.mar);
             let data = data.unwrap();
-            self.state.set_a(*data);
+            self.state.set_a(data);
         }
     }
 }
@@ -204,11 +208,11 @@ mod test {
 
         m.write(0, 42);
 
-        assert_eq!(m.read(&0).unwrap(), &42);
+        assert_eq!(m.read(&0).unwrap(), 42);
 
         m.write(0, 43);
 
-        assert_eq!(m.read(&0).unwrap(), &43);
+        assert_eq!(m.read(&0).unwrap(), 43);
     }
 }
 
