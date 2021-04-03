@@ -149,6 +149,8 @@ fn main() {
     let mut cpu = cpu::CpuState::new();
     println!("Hello {:?}", cpu);
     cpu.set_flag(cpu::Flag::ZRO, true);
+    cpu.set_a(0x2A);
+    println!("A {:?}", cpu.a);
     println!("Zero {:?}", cpu.get_flag(cpu::Flag::ZRO));
     println!("Negative {:?}", cpu.get_flag(cpu::Flag::NEG));
 }
