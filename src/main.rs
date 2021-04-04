@@ -26,6 +26,12 @@ mod cpu {
         }
     }
 
+    /// Sources and destinations when transferring data between registers.
+    pub enum Target {
+        ACC,
+        MDR,
+    }
+
     #[derive(Debug)]
     pub struct CpuState {
         /// Program Counter
@@ -73,10 +79,24 @@ mod cpu {
             self.sr = flag_val;
         }
 
-        pub fn set_a(&mut self, val: Data) {
-            self.a = val;
+        pub fn set_flags_from_val(&mut self, val: Data) {
             self.set_flag(Flag::ZRO, val == 0);
             self.set_flag(Flag::NEG, (val >> DATA_WIDTH - 1) > 0);
+        }
+
+        /// Transfer values between registers via implied internal bus.
+        pub fn transfer(&mut self, src: Target, dst: Target) {
+            let val: Byte = match src {
+                Target::ACC => self.a,
+                Target::MDR => self.mdr,
+            };
+            match dst {
+                Target::ACC => {
+                    self.a = val;
+                    self.set_flags_from_val(val);
+                }
+                Target::MDR => self.mdr = val,
+            }
         }
     }
 
@@ -153,8 +173,8 @@ mod cpu {
         /// Execute final part of a cycle.
         /// The outside world should have reacted on the bus by now.
         pub fn complete_cycle(&mut self) {
-            let data = self.data_bus;
-            self.state.set_a(data);
+            self.state.mdr = self.data_bus;
+            self.state.transfer(Target::MDR, Target::ACC);
         }
     }
 }
@@ -188,36 +208,41 @@ mod test {
     }
 
     #[test]
-    fn test_set_a_sets_a() {
+    fn test_transfer_set_a() {
         let mut cpu = CpuState::new();
+        cpu.mdr = 42;
 
-        cpu.set_a(42);
+        cpu.transfer(Target::MDR, Target::ACC);
 
         assert_eq!(cpu.a, 42);
     }
 
     #[test]
-    fn test_set_a_sets_zro() {
+    fn test_transfer_set_a_sets_zro() {
         let mut cpu = CpuState::new();
+        cpu.mdr = 0;
 
-        cpu.set_a(0);
+        cpu.transfer(Target::MDR, Target::ACC);
 
         assert_eq!(cpu.get_flag(Flag::ZRO), true);
 
-        cpu.set_a(42);
+        cpu.mdr = 42;
+        cpu.transfer(Target::MDR, Target::ACC);
 
         assert_eq!(cpu.get_flag(Flag::ZRO), false);
     }
 
     #[test]
-    fn test_set_a_sets_neg() {
+    fn test_transfer_set_a_sets_neg() {
         let mut cpu = CpuState::new();
 
-        cpu.set_a(1 << DATA_WIDTH - 1);
+        cpu.mdr = 1 << DATA_WIDTH - 1;
+        cpu.transfer(Target::MDR, Target::ACC);
 
         assert_eq!(cpu.get_flag(Flag::NEG), true);
 
-        cpu.set_a(0);
+        cpu.mdr = 0;
+        cpu.transfer(Target::MDR, Target::ACC);
 
         assert_eq!(cpu.get_flag(Flag::NEG), false);
     }
