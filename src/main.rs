@@ -115,16 +115,29 @@ mod cpu {
     }
 
     #[derive(Debug)]
-    pub struct Cpu<'a> {
-        state: CpuState,
-        mem: &'a mut CheapoMemory,
+    pub enum BusMode {
+        READ = 1,
+        WRITE = 0,
     }
 
-    impl<'a> Cpu<'a> {
-        pub fn new(mem: &mut CheapoMemory) -> Cpu {
+    #[derive(Debug)]
+    pub struct Cpu {
+        state: CpuState,
+        pub addr_bus: Address,
+        pub data_bus: Data,
+        pub rwb: BusMode,
+    }
+
+    impl Cpu {
+        pub fn new() -> Cpu {
+            let state = CpuState::new();
+            let addr = state.mar;
+            let data = state.mdr;
             Cpu {
-                state: CpuState::new(),
-                mem: mem,
+                state: state,
+                addr_bus: addr,
+                data_bus: data,
+                rwb: BusMode::READ,
             }
         }
 
@@ -132,14 +145,15 @@ mod cpu {
         /// At the end, bus fields must hold desired values.
         pub fn setup_cycle(&mut self) {
             // Just give us something to do for now.
-            self.mem.write(self.state.mar, 42);
+            self.addr_bus = 0xFF;
+            self.data_bus = 42;
+            self.rwb = BusMode::WRITE; // set _after_ data_bus is valid
         }
 
         /// Execute final part of a cycle.
         /// The outside world should have reacted on the bus by now.
         pub fn complete_cycle(&mut self) {
-            let data = self.mem.read(&self.state.mar);
-            let data = data.unwrap();
+            let data = self.data_bus;
             self.state.set_a(data);
         }
     }
@@ -232,11 +246,27 @@ fn main() {
     println!("Zero {:?}", state.get_flag(Flag::ZRO));
     println!("Negative {:?}", state.get_flag(Flag::NEG));
 
+    let mut cpu = Cpu::new();
     let mut mem = CheapoMemory::new();
-    let mut cpu = Cpu::new(&mut mem);
 
     cpu.setup_cycle();
+
+    match cpu.rwb {
+        BusMode::READ => {
+            let addr = cpu.addr_bus;
+            let val = mem.read(&addr);
+            let val = val.unwrap();
+            cpu.data_bus = val;
+        }
+        BusMode::WRITE => {
+            let addr = cpu.addr_bus;
+            let data = cpu.data_bus;
+            mem.write(addr, data);
+        }
+    }
+
     cpu.complete_cycle();
 
-    println!("Cpu {:?}", cpu);
+    println!("{:?}", cpu);
+    println!("{:?}", mem);
 }
