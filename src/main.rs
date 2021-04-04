@@ -128,8 +128,16 @@ mod cpu {
             }
         }
 
-        pub fn execute_cycle(&mut self, val: Data) {
-            self.mem.write(self.state.mar, val);
+        /// Execute first part of a cycle.
+        /// At the end, bus fields must hold desired values.
+        pub fn setup_cycle(&mut self) {
+            // Just give us something to do for now.
+            self.mem.write(self.state.mar, 42);
+        }
+
+        /// Execute final part of a cycle.
+        /// The outside world should have reacted on the bus by now.
+        pub fn complete_cycle(&mut self) {
             let data = self.mem.read(&self.state.mar);
             let data = data.unwrap();
             self.state.set_a(data);
@@ -227,7 +235,8 @@ fn main() {
     let mut mem = CheapoMemory::new();
     let mut cpu = Cpu::new(&mut mem);
 
-    cpu.execute_cycle(42);
+    cpu.setup_cycle();
+    cpu.complete_cycle();
 
     println!("Cpu {:?}", cpu);
 }
